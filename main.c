@@ -55,11 +55,16 @@
 
 #define BUTTON_DETECTION_DELAY               APP_TIMER_TICKS(50, APP_TIMER_PRESCALER)   /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
+#define MAJ_VAL_OFFSET_IN_BEACON_INFO    18                                /**< Position of the MSB of the Major Value in m_beacon_info array. */
+
 static volatile uint16_t                     m_cur_heart_rate;                          /**< Current heart rate value. */
+static volatile uint16_t major_value = (0x12345678 & 0xFFFF0000) >> 16;
+static volatile uint16_t minor_value = (0x12345678 & 0x0000FFFF);
+
+static volatile uint8_t index = MAJ_VAL_OFFSET_IN_BEACON_INFO;
 
 
 #if defined(USE_UICR_FOR_MAJ_MIN_VALUES)
-#define MAJ_VAL_OFFSET_IN_BEACON_INFO    18                                /**< Position of the MSB of the Major Value in m_beacon_info array. */
 #define UICR_ADDRESS                     0x10001080                        /**< Address of the UICR register used by this example. The major and minor versions to be encoded into the advertising data will be picked up from this location. */
 #endif
 
@@ -139,69 +144,6 @@ static void timers_init(void)
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
 }
 
-/**@brief Function for handling button events.
- *
- * @param[in]   pin_no   The pin number of the button pressed.
- */
-static void button_event_handler(uint8_t pin_no, uint8_t button_action)
-{
-    if (button_action == APP_BUTTON_PUSH)
-    {
-        switch (pin_no)
-        {
-            case HR_INC_BUTTON_PIN_NO:
-                // Increase Heart Rate measurement
-                m_cur_heart_rate += HEART_RATE_CHANGE;
-                if (m_cur_heart_rate > MAX_HEART_RATE)
-                {
-                    m_cur_heart_rate = MIN_HEART_RATE; // Loop back
-                }
-                nrf_gpio_pin_toggle(LED_1);
-                break;
-                
-            case HR_DEC_BUTTON_PIN_NO:
-                // Decrease Heart Rate measurement
-                m_cur_heart_rate -= HEART_RATE_CHANGE;
-                if (m_cur_heart_rate < MIN_HEART_RATE)
-                {
-                    m_cur_heart_rate = MAX_HEART_RATE; // Loop back
-                }
-                break;
-                
-            default:
-                APP_ERROR_HANDLER(pin_no);
-                break;
-        }
-    }    
-}
-
-/**@brief Function for initializing the button module.
- */
-static void buttons_init(void)
-{
-    // Configure HR_INC_BUTTON_PIN_NO and HR_DEC_BUTTON_PIN_NO as wake up buttons and also configure
-    // for 'pull up' because the eval board does not have external pull up resistors connected to
-    // the buttons.
-    static app_button_cfg_t buttons[] =
-    {
-        {HR_INC_BUTTON_PIN_NO, false, BUTTON_PULL, button_event_handler},
-        {HR_DEC_BUTTON_PIN_NO, false, BUTTON_PULL, button_event_handler}  // Note: This pin is also BONDMNGR_DELETE_BUTTON_PIN_NO
-    };
-    
-    APP_BUTTON_INIT(buttons, sizeof(buttons) / sizeof(buttons[0]), BUTTON_DETECTION_DELAY, false);
-}
-
-
-/**@brief Function for the LEDs initialization.
- *
- * @details Initializes all LEDs used by this application.
- */
-static void leds_init(void)
-{
-    nrf_gpio_cfg_output(ADVERTISING_LED_PIN_NO);
-    nrf_gpio_cfg_output(LED_1);
-}
-
 
 /**@brief Function for initializing the Advertising functionality.
  *
@@ -278,6 +220,79 @@ static void advertising_start(void)
     APP_ERROR_CHECK(err_code);
 
     nrf_gpio_pin_set(ADVERTISING_LED_PIN_NO);
+}
+
+
+
+/**@brief Function for handling button events.
+ *
+ * @param[in]   pin_no   The pin number of the button pressed.
+ */
+static void button_event_handler(uint8_t pin_no, uint8_t button_action)
+{
+    if (button_action == APP_BUTTON_PUSH)
+    {
+        switch (pin_no)
+        {
+            case HR_INC_BUTTON_PIN_NO:
+                // Increase Heart Rate measurement
+                m_cur_heart_rate += HEART_RATE_CHANGE;
+                if (m_cur_heart_rate > MAX_HEART_RATE)
+                {
+                    m_cur_heart_rate = MIN_HEART_RATE; // Loop back
+                }
+                nrf_gpio_pin_toggle(LED_1);
+                break;
+                
+            case HR_DEC_BUTTON_PIN_NO:
+                // Decrease Heart Rate measurement
+                m_cur_heart_rate -= HEART_RATE_CHANGE;
+                if (m_cur_heart_rate < MIN_HEART_RATE)
+                {
+                    m_cur_heart_rate = MAX_HEART_RATE; // Loop back
+                }
+
+								m_beacon_info[index++] = MSB(major_value);
+								m_beacon_info[index++] = LSB(major_value);
+
+								m_beacon_info[index++] = MSB(minor_value);
+								m_beacon_info[index++] = LSB(minor_value);
+								advertising_init();
+								advertising_start();
+                break;
+                
+            default:
+                APP_ERROR_HANDLER(pin_no);
+                break;
+        }
+    }    
+}
+
+/**@brief Function for initializing the button module.
+ */
+static void buttons_init(void)
+{
+    // Configure HR_INC_BUTTON_PIN_NO and HR_DEC_BUTTON_PIN_NO as wake up buttons and also configure
+    // for 'pull up' because the eval board does not have external pull up resistors connected to
+    // the buttons.
+    static app_button_cfg_t buttons[] =
+    {
+        {HR_INC_BUTTON_PIN_NO, false, BUTTON_PULL, button_event_handler},
+        {HR_DEC_BUTTON_PIN_NO, false, BUTTON_PULL, button_event_handler}  // Note: This pin is also BONDMNGR_DELETE_BUTTON_PIN_NO
+    };
+    
+    APP_BUTTON_INIT(buttons, sizeof(buttons) / sizeof(buttons[0]), BUTTON_DETECTION_DELAY, false);
+}
+
+
+/**@brief Function for the LEDs initialization.
+ *
+ * @details Initializes all LEDs used by this application.
+ */
+static void leds_init(void)
+{
+    nrf_gpio_cfg_output(ADVERTISING_LED_PIN_NO);
+    nrf_gpio_cfg_output(LED_1);
 }
 
 
