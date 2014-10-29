@@ -252,13 +252,13 @@ static void button_event_handler(uint8_t pin_no, uint8_t button_action)
                     m_cur_heart_rate = MAX_HEART_RATE; // Loop back
                 }
 
-								m_beacon_info[index++] = MSB(major_value);
-								m_beacon_info[index++] = LSB(major_value);
+                m_beacon_info[index++] = MSB(major_value);
+                m_beacon_info[index++] = LSB(major_value);
 
-								m_beacon_info[index++] = MSB(minor_value);
-								m_beacon_info[index++] = LSB(minor_value);
-								advertising_init();
-								advertising_start();
+                m_beacon_info[index++] = MSB(minor_value);
+                m_beacon_info[index++] = LSB(minor_value);
+                advertising_init();
+                advertising_start();
                 break;
                 
             default:
