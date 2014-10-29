@@ -499,6 +499,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\Source\ble\ble_debug_assert_handler.c</FilePath>
             </File>
+            <File>
+              <FileName>nrf_delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\Source\nrf_delay\nrf_delay.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
@@ -995,6 +1000,11 @@
               <FileName>ble_debug_assert_handler.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\Source\ble\ble_debug_assert_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>nrf_delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\Source\nrf_delay\nrf_delay.c</FilePath>
             </File>
           </Files>
         </Group>

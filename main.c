@@ -10,6 +10,7 @@
 #include "boards.h"
 #include "nordic_common.h"
 #include "softdevice_handler.h"
+#include "nrf_delay.h"
 
 #include "app_gpiote.h"
 #include "app_button.h"
@@ -101,10 +102,10 @@ void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t * p
     //                The flash write will happen EVEN if the radio is active, thus interrupting
     //                any communication.
     //                Use with care. Un-comment the line below to use.
-    // ble_debug_assert_handler(error_code, line_num, p_file_name);
+    ble_debug_assert_handler(error_code, line_num, p_file_name);
 
     // On assert, the system can only recover on reset.
-    NVIC_SystemReset();
+    //NVIC_SystemReset();
 }
 
 
@@ -251,15 +252,22 @@ static void button_event_handler(uint8_t pin_no, uint8_t button_action)
                 {
                     m_cur_heart_rate = MAX_HEART_RATE; // Loop back
                 }
-
+                
+                uint8_t index = MAJ_VAL_OFFSET_IN_BEACON_INFO;
+                
                 m_beacon_info[index++] = MSB(major_value);
                 m_beacon_info[index++] = LSB(major_value);
 
                 m_beacon_info[index++] = MSB(minor_value);
                 m_beacon_info[index++] = LSB(minor_value);
+                
+                sd_ble_gap_adv_stop();
+                
+                //https://devzone.nordicsemi.com/question/15077/stop-advertising/
+                
+                //nrf_delay_ms(4);
                 advertising_init();
                 advertising_start();
-                // Here should be an indented line at the same line as the above
                 break;
                 
             default:
