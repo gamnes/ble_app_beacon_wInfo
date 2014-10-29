@@ -259,6 +259,7 @@ static void button_event_handler(uint8_t pin_no, uint8_t button_action)
                 m_beacon_info[index++] = LSB(minor_value);
                 advertising_init();
                 advertising_start();
+                // Here should be an indented line at the same line as the above
                 break;
                 
             default:
