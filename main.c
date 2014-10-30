@@ -40,6 +40,8 @@
 #define HR_INC_BUTTON_PIN_NO                 BUTTON_0                                   /**< Button used to increment heart rate. */
 #define HR_DEC_BUTTON_PIN_NO                 BUTTON_1                                   /**< Button used to decrement heart rate. */
 
+#define TIMER_PRESCALERS  6U       /**< Prescaler setting for timer. */
+
 #define GG_USE_HR_IN_ADV                     1
 
 #define APP_TIMER_PRESCALER                  0                                          /**< Value of the RTC1 PRESCALER register. */
@@ -305,6 +307,88 @@ static void leds_init(void)
 }
 
 
+/**
+ * @brief Function for configuring: pin 0 for input, pin 8 for output, 
+ * and configures GPIOTE to give an interrupt on pin change.
+ */
+/*
+static void gpio_init(void)
+{
+    nrf_gpio_cfg_input(BUTTON_0, BUTTON_PULL);
+    nrf_gpio_cfg_output(LED_0);
+
+    nrf_gpio_pin_write(LED_0, BUTTON_0);
+
+    // Enable interrupt:
+    NVIC_EnableIRQ(GPIOTE_IRQn);
+    NRF_GPIOTE->CONFIG[0] =  (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos)
+                           | (0 << GPIOTE_CONFIG_PSEL_Pos)  
+                           | (GPIOTE_CONFIG_MODE_Event << GPIOTE_CONFIG_MODE_Pos);
+    NRF_GPIOTE->INTENSET  = GPIOTE_INTENSET_IN0_Set << GPIOTE_INTENSET_IN0_Pos;
+}
+*/
+
+
+/** @brief Function for handling the GPIOTE interrupt which is triggered on pin 0 change.
+ */
+ /*
+void GPIOTE_IRQHandler(void)
+{
+    // Event causing the interrupt must be cleared.
+    if ((NRF_GPIOTE->EVENTS_IN[0] == 1) && 
+        (NRF_GPIOTE->INTENSET & GPIOTE_INTENSET_IN0_Msk))
+    {
+        NRF_GPIOTE->EVENTS_IN[0] = 0;
+    }
+    nrf_gpio_pin_toggle(8);
+}
+*/
+
+/** @brief Function for handling timer 2 peripheral interrupts.
+ */
+void TIMER2_IRQHandler(void)
+{
+    // Clear interrupt  
+    if ((NRF_TIMER2->EVENTS_COMPARE[1] != 0) && 
+       ((NRF_TIMER2->INTENSET & TIMER_INTENSET_COMPARE1_Msk) != 0))
+    {
+        NRF_TIMER2->EVENTS_COMPARE[1] = 0;
+    }
+    // Process buttons
+    if (nrf_gpio_pin_read(BUTTON_1) == 0) {
+        nrf_gpio_pin_toggle(LED_0);
+    }
+}
+
+
+/** @brief Function for initializing the Timer 2 peripheral.
+ */
+static void timer2_init(void)
+{
+    // Start 16 MHz crystal oscillator .
+    NRF_CLOCK->EVENTS_HFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_HFCLKSTART    = 1;
+
+    // Wait for the external oscillator to start up.
+    while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0) 
+    {
+        //Do nothing.
+    }
+
+    NRF_TIMER2->MODE      = TIMER_MODE_MODE_Timer;
+    NRF_TIMER2->PRESCALER = 6;
+
+    // Clears the timer, sets it to 0.
+    NRF_TIMER2->TASKS_CLEAR = 1;
+
+    // Load the initial values to TIMER2 CC registers.
+    NRF_TIMER2->CC[1] = 256U;
+
+    // Interrupt setup.
+    NRF_TIMER2->INTENSET = (TIMER_INTENSET_COMPARE1_Enabled << TIMER_INTENSET_COMPARE1_Pos);
+}
+
+
 /**@brief Function for initializing the BLE stack.
  *
  * @details Initializes the SoftDevice and the BLE event interrupt.
@@ -341,10 +425,17 @@ int main(void)
 {
     uint32_t err_code;
     
-    // Initialize.
-    timers_init();
-    gpiote_init();
-    buttons_init();
+    // Initialize. for use with buttons
+    //timers_init();
+    //gpiote_init();
+    //buttons_init();
+    
+    // Use for checking when timer instead
+    // ####
+    nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
+    timer2_init();
+    
+    
     leds_init();
     ble_stack_init();
     advertising_init();
@@ -353,8 +444,16 @@ int main(void)
     advertising_start();
     
     // Start handling button presses
-    err_code = app_button_enable();
-    APP_ERROR_CHECK(err_code);
+    //err_code = app_button_enable();
+    //APP_ERROR_CHECK(err_code);
+    
+    // Enable interrupt on Timer 2.
+    NVIC_EnableIRQ(TIMER2_IRQn);
+    __enable_irq();
+
+    // Start the timer.
+    NRF_TIMER2->TASKS_START = 1;
+    // ####
 
     // Enter main loop.
     for (;;)
