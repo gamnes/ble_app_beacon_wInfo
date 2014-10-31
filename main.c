@@ -419,37 +419,37 @@ static void lfclk_config(void)
  */
 static void rtc_config(void)
 {
-    NVIC_EnableIRQ(RTC0_IRQn);                                  // Enable Interrupt for the RTC in the core.
-    NRF_RTC0->PRESCALER = COUNTER_PRESCALER;                    // Set prescaler to a TICK of RTC_FREQUENCY.
-    NRF_RTC0->CC[0]     = COMPARE_COUNTERTIME * RTC_FREQUENCY;  // Compare0 after approx COMPARE_COUNTERTIME seconds.
+    NVIC_EnableIRQ(RTC1_IRQn);                                  // Enable Interrupt for the RTC in the core.
+    NRF_RTC1->PRESCALER = COUNTER_PRESCALER;                    // Set prescaler to a TICK of RTC_FREQUENCY.
+    NRF_RTC1->CC[0]     = COMPARE_COUNTERTIME * RTC_FREQUENCY;  // Compare0 after approx COMPARE_COUNTERTIME seconds.
 
     // Enable TICK event and TICK interrupt:
     //NRF_RTC0->EVTENSET = RTC_EVTENSET_TICK_Msk;
     //NRF_RTC0->INTENSET = RTC_INTENSET_TICK_Msk;
 
     // Enable COMPARE0 event and COMPARE0 interrupt:
-    NRF_RTC0->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
-    NRF_RTC0->INTENSET = RTC_INTENSET_COMPARE0_Msk;
+    NRF_RTC1->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
+    NRF_RTC1->INTENSET = RTC_INTENSET_COMPARE0_Msk;
 }
 
 /** @brief: Function for handling the RTC0 interrupts.
  * Triggered on TICK and COMPARE0 match.
  */
-void RTC0_IRQHandler()
+void RTC1_IRQHandler()
 {
-    if ((NRF_RTC0->EVENTS_TICK != 0) &&
-        ((NRF_RTC0->INTENSET & RTC_INTENSET_TICK_Msk) != 0))
+    if ((NRF_RTC1->EVENTS_TICK != 0) &&
+        ((NRF_RTC1->INTENSET & RTC_INTENSET_TICK_Msk) != 0))
     {
-        NRF_RTC0->EVENTS_TICK = 0;
+        NRF_RTC1->EVENTS_TICK = 0;
         nrf_gpio_pin_toggle(GPIO_TOGGLE_TICK_EVENT);
     }
     
-    if ((NRF_RTC0->EVENTS_COMPARE[0] != 0) &&
-        ((NRF_RTC0->INTENSET & RTC_INTENSET_COMPARE0_Msk) != 0))
+    if ((NRF_RTC1->EVENTS_COMPARE[0] != 0) &&
+        ((NRF_RTC1->INTENSET & RTC_INTENSET_COMPARE0_Msk) != 0))
     {
-        NRF_RTC0->EVENTS_COMPARE[0] = 0;
+        NRF_RTC1->EVENTS_COMPARE[0] = 0;
         nrf_gpio_pin_toggle(GPIO_TOGGLE_COMPARE_EVENT);
-        NRF_RTC0->TASKS_CLEAR = 1;
+        NRF_RTC1->TASKS_CLEAR = 1;
         
         if (nrf_gpio_pin_read(BUTTON_1) == 0) {
             nrf_gpio_pin_toggle(GPIO_TOGGLE_TICK_EVENT);
@@ -545,7 +545,7 @@ int main(void)
 
     // Start the timer.
     //NRF_TIMER2->TASKS_START = 1;
-    NRF_RTC0->TASKS_START = 1;
+    NRF_RTC1->TASKS_START = 1;
     // ####
 
     // Enter main loop.
@@ -553,13 +553,20 @@ int main(void)
     {
         //power_manage();
         if (startAdvertising) {
-            NRF_CLOCK->TASKS_LFCLKSTOP = 1;
-            NRF_RTC0->TASKS_STOP = 1;
-            NVIC_DisableIRQ(RTC0_IRQn);
+            // Stop RTC clock interrupts
+            //NRF_CLOCK->TASKS_LFCLKSTOP = 1;
+            //NRF_RTC0->TASKS_STOP = 1;
+            NVIC_DisableIRQ(RTC1_IRQn);
+            
+            // Enable advertising
             ble_stack_init();
             advertising_init();
             advertising_start();
-            power_manage();
+            nrf_delay_ms(1000);
+            sd_ble_gap_adv_stop();
+            
+            // Try to start RTC clock interrupts again
+            NVIC_EnableIRQ(RTC1_IRQn);
             startAdvertising = 0;
         }
         if (stopAdvertising) {
