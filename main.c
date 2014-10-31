@@ -68,6 +68,9 @@
 #define GPIO_TOGGLE_TICK_EVENT    (LED_0)                                 /**< Pin number to toggle when there is a tick event in RTC. */
 #define GPIO_TOGGLE_COMPARE_EVENT (LED_1)                                 /**< Pin number to toggle when there is compare event in RTC. */
 
+static volatile uint16_t startAdvertising = 0;
+static volatile uint16_t stopAdvertising = 1;
+
 static volatile uint16_t                     m_cur_heart_rate;                          /**< Current heart rate value. */
 static volatile uint16_t major_value = (0x12345678 & 0xFFFF0000) >> 16;
 static volatile uint16_t minor_value = (0x12345678 & 0x0000FFFF);
@@ -421,8 +424,8 @@ static void rtc_config(void)
     NRF_RTC0->CC[0]     = COMPARE_COUNTERTIME * RTC_FREQUENCY;  // Compare0 after approx COMPARE_COUNTERTIME seconds.
 
     // Enable TICK event and TICK interrupt:
-    NRF_RTC0->EVTENSET = RTC_EVTENSET_TICK_Msk;
-    NRF_RTC0->INTENSET = RTC_INTENSET_TICK_Msk;
+    //NRF_RTC0->EVTENSET = RTC_EVTENSET_TICK_Msk;
+    //NRF_RTC0->INTENSET = RTC_INTENSET_TICK_Msk;
 
     // Enable COMPARE0 event and COMPARE0 interrupt:
     NRF_RTC0->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
@@ -447,6 +450,17 @@ void RTC0_IRQHandler()
         NRF_RTC0->EVENTS_COMPARE[0] = 0;
         nrf_gpio_pin_toggle(GPIO_TOGGLE_COMPARE_EVENT);
         NRF_RTC0->TASKS_CLEAR = 1;
+        
+        if (nrf_gpio_pin_read(BUTTON_1) == 0) {
+            nrf_gpio_pin_toggle(GPIO_TOGGLE_TICK_EVENT);
+            startAdvertising = 1;
+            stopAdvertising = 0;
+        }
+        if (nrf_gpio_pin_read(BUTTON_0) == 0) {
+            nrf_gpio_pin_toggle(GPIO_TOGGLE_TICK_EVENT);
+            startAdvertising = 0;
+            stopAdvertising = 1;
+        }
     }
 }
 
@@ -506,18 +520,21 @@ int main(void)
     
     // Use for checking when timer instead
     // ####
+    //nrf_gpio_cfg_input(BUTTON_0, BUTTON_PULL);
     //nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
     //timer2_init();
-    gpio_config();
+    
+    //gpio_config();
     lfclk_config();
     rtc_config();
+    NVIC_DisableIRQ(RTC0_IRQn);
     
-    //leds_init();
-    //ble_stack_init();
-    //advertising_init();
+    leds_init();
+    ble_stack_init();
+    advertising_init();
 
     // Start execution.
-    //advertising_start();
+    advertising_start();
     
     // Start handling button presses
     //err_code = app_button_enable();
@@ -529,13 +546,22 @@ int main(void)
 
     // Start the timer.
     //NRF_TIMER2->TASKS_START = 1;
-    NRF_RTC0->TASKS_START = 1;
+    //NRF_RTC0->TASKS_START = 1;
     // ####
 
     // Enter main loop.
     for (;;)
     {
         //power_manage();
+        if (startAdvertising) {
+            //NRF_CLOCK->TASKS_LFCLKSTOP = 1;
+            //ble_stack_init();
+            //power_manage();
+            startAdvertising = 0;
+        }
+        if (stopAdvertising) {
+            
+        }
     }
 }
 
