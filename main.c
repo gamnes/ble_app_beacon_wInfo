@@ -520,21 +520,20 @@ int main(void)
     
     // Use for checking when timer instead
     // ####
-    //nrf_gpio_cfg_input(BUTTON_0, BUTTON_PULL);
-    //nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
+    leds_init();
+    nrf_gpio_cfg_input(BUTTON_0, BUTTON_PULL);
+    nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
     //timer2_init();
     
     //gpio_config();
     lfclk_config();
     rtc_config();
-    NVIC_DisableIRQ(RTC0_IRQn);
     
-    leds_init();
-    ble_stack_init();
-    advertising_init();
+    //ble_stack_init();
+    //advertising_init();
 
     // Start execution.
-    advertising_start();
+    //advertising_start();
     
     // Start handling button presses
     //err_code = app_button_enable();
@@ -546,7 +545,7 @@ int main(void)
 
     // Start the timer.
     //NRF_TIMER2->TASKS_START = 1;
-    //NRF_RTC0->TASKS_START = 1;
+    NRF_RTC0->TASKS_START = 1;
     // ####
 
     // Enter main loop.
@@ -554,9 +553,13 @@ int main(void)
     {
         //power_manage();
         if (startAdvertising) {
-            //NRF_CLOCK->TASKS_LFCLKSTOP = 1;
-            //ble_stack_init();
-            //power_manage();
+            NRF_CLOCK->TASKS_LFCLKSTOP = 1;
+            NRF_RTC0->TASKS_STOP = 1;
+            NVIC_DisableIRQ(RTC0_IRQn);
+            ble_stack_init();
+            advertising_init();
+            advertising_start();
+            power_manage();
             startAdvertising = 0;
         }
         if (stopAdvertising) {
