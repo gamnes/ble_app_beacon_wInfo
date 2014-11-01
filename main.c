@@ -556,7 +556,7 @@ int main(void)
             // Stop RTC clock interrupts
             //NRF_CLOCK->TASKS_LFCLKSTOP = 1;
             //NRF_RTC0->TASKS_STOP = 1;
-            NVIC_DisableIRQ(RTC1_IRQn);
+            //NVIC_DisableIRQ(RTC1_IRQn);
             
             // Enable advertising
             ble_stack_init();
@@ -566,7 +566,7 @@ int main(void)
             sd_ble_gap_adv_stop();
             
             // Try to start RTC clock interrupts again
-            NVIC_EnableIRQ(RTC1_IRQn);
+            //NVIC_EnableIRQ(RTC1_IRQn);
             startAdvertising = 0;
         }
         if (stopAdvertising) {
