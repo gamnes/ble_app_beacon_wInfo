@@ -133,6 +133,10 @@ static void gap_params_init(void) {
 static uint32_t do_temperature_measurement(void) {
     uint32_t retval = 0xFE000000;
 
+    if (nrf_gpio_pin_read(BUTTON_1)) {
+        retval = 0xBB000000;
+    }
+    
     return retval;
 }
 
@@ -271,6 +275,7 @@ int main(void)
     uint32_t err_code;
 
     nrf_gpio_range_cfg_output(LED_0, LED_1);
+    nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
     nrf_gpio_pin_set(LED_0);
 
     ble_stack_init();
@@ -289,6 +294,7 @@ int main(void)
         if (m_do_update)
         {
             advertising_init();
+            nrf_gpio_pin_toggle(LED_1);
             m_do_update = false;
         }
 
