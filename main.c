@@ -131,20 +131,35 @@ static void gap_params_init(void) {
 }
 
 static uint32_t do_temperature_measurement(void) {
-    uint32_t retval = 0xFE000000;
+    uint32_t retval = 0xFE000E74;
 
     if (nrf_gpio_pin_read(BUTTON_1)) {
-        retval = 0xBB000000;
+        retval = 0xFF000E74;
     }
     
     return retval;
+    /*
+    int32_t temp;
+    uint32_t err_code;
+    
+    err_code = sd_temp_get(&temp);
+    APP_ERROR_CHECK(err_code);
+    
+    temp = (temp / 4) * 100;
+    
+    int8_t exponent = -2;
+    return ((exponent & 0xFF) << 24) | (temp & 0x00FFFFFF);
+    */
 }
 
 /* This function measures the battery voltage using the bandgap as a reference.
  * 3.6 V will return 100 %, so depending on battery voltage, it might need scaling. */
-static uint32_t do_battery_measurement(void)
-{
+static uint32_t do_battery_measurement(void) {
     uint8_t retval = 0xAA;
+    
+    if (nrf_gpio_pin_read(BUTTON_1)) {
+        retval = 0x24;
+    }
 
     return retval;
 }
