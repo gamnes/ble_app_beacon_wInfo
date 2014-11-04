@@ -157,7 +157,8 @@ static uint32_t do_temperature_measurement(void) {
     uint32_t err_code;
     err_code = sd_temp_get(&temp);
     APP_ERROR_CHECK(err_code);
-    if (nrf_gpio_pin_read(BUTTON_1)) {
+    //if (nrf_gpio_pin_read(BUTTON_1)) {
+    if (nrf_gpio_pin_read(INPUT_PIN_SENSOR)) {
         temp = 0x00000065; // 50 is 10 deg
     }
     temp = (temp / 4) * 100;
@@ -170,7 +171,8 @@ static uint32_t do_temperature_measurement(void) {
 static uint32_t do_battery_measurement(void) {
     uint8_t retval = 0xAA;
     
-    if (nrf_gpio_pin_read(BUTTON_1)) {
+    //if (nrf_gpio_pin_read(BUTTON_1)) {
+    if (nrf_gpio_pin_read(INPUT_PIN_SENSOR)) {
         retval = 0x24;
     }
 
@@ -324,7 +326,6 @@ int main(void)
         if (m_do_update) {
             // Check the sensor to see if it is active
             // First set the output pin high
-            nrf_gpio_pin_set(OUTPUT_PIN_SENSOR);
             if (nrf_gpio_pin_read(INPUT_PIN_SENSOR)) {
                 // Pin is high
                 nrf_gpio_pin_set(LED_0);
@@ -333,11 +334,11 @@ int main(void)
                 // Pin is low
                 nrf_gpio_pin_toggle(LED_0);
             }
-            nrf_gpio_pin_clear(OUTPUT_PIN_SENSOR);
+            //nrf_gpio_pin_clear(OUTPUT_PIN_SENSOR);
             
             // Reset the advertisement (ADD IF change in sensor value)
-            advertising_init();
             nrf_gpio_pin_toggle(LED_1);
+            advertising_init();
             m_do_update = false;
         }
 
