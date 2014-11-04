@@ -43,6 +43,9 @@
 
 #define DEAD_BEEF                            0xDEADBEEF                                /**< Value used as error code on stack dump, can be used to identify stack location on stack */
 
+#define INPUT_PIN_SENSOR                      0
+#define OUTPUT_PIN_SENSOR                     1
+
 static volatile bool m_do_update = false;
 
 /*****************************************************************************
@@ -210,8 +213,7 @@ static void advertising_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-void radio_notification_callback(bool is_radio_active)
-{
+void radio_notification_callback(bool is_radio_active) {
     m_do_update = is_radio_active;
 }
 
@@ -301,6 +303,10 @@ int main(void)
 
     nrf_gpio_range_cfg_output(LED_0, LED_1);
     nrf_gpio_cfg_input(BUTTON_1, BUTTON_PULL);
+    nrf_gpio_cfg_input(INPUT_PIN_SENSOR, BUTTON_PULL);
+    nrf_gpio_cfg_output(OUTPUT_PIN_SENSOR);
+    nrf_gpio_pin_clear(OUTPUT_PIN_SENSOR);
+    
     nrf_gpio_pin_set(LED_0);
 
     ble_stack_init();
@@ -314,10 +320,22 @@ int main(void)
     advertising_start();
 
     // Enter main loop
-    for (;;)
-    {
-        if (m_do_update)
-        {
+    for (;;) {
+        if (m_do_update) {
+            // Check the sensor to see if it is active
+            // First set the output pin high
+            nrf_gpio_pin_set(OUTPUT_PIN_SENSOR);
+            if (nrf_gpio_pin_read(INPUT_PIN_SENSOR)) {
+                // Pin is high
+                nrf_gpio_pin_set(LED_0);
+            }
+            else {
+                // Pin is low
+                nrf_gpio_pin_toggle(LED_0);
+            }
+            nrf_gpio_pin_clear(OUTPUT_PIN_SENSOR);
+            
+            // Reset the advertisement (ADD IF change in sensor value)
             advertising_init();
             nrf_gpio_pin_toggle(LED_1);
             m_do_update = false;
