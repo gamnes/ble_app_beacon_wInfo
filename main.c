@@ -329,6 +329,31 @@ int main(void)
     }
 }
 
+/*
+// Reading pin and setting pin example:
+// Configure LED-pins as outputs
+    nrf_gpio_cfg_output(LED_0);
+    nrf_gpio_cfg_output(LED_1);
+    
+    nrf_gpio_cfg_input(0, NRF_GPIO_PIN_PULLUP);
+    
+    nrf_gpio_cfg_output(1);
+    nrf_gpio_pin_set(1);
+  
+    // LED 0 and LED 1 blink alternately.
+    while (true)
+    {
+        if (nrf_gpio_pin_read(0))
+        {
+            nrf_gpio_pin_set(LED_1);
+        }
+        else 
+        {
+            nrf_gpio_pin_clear(LED_1);
+        }
+    }
+*/
+
 /**
  * @}
  */
