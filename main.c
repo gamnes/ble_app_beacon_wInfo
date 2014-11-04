@@ -137,7 +137,7 @@ static uint32_t do_temperature_measurement(void) {
         retval = 0xFF000E74;
     }
     
-    return retval;
+    //return retval;
     /*
     int32_t temp;
     uint32_t err_code;
@@ -150,6 +150,16 @@ static uint32_t do_temperature_measurement(void) {
     int8_t exponent = -2;
     return ((exponent & 0xFF) << 24) | (temp & 0x00FFFFFF);
     */
+    int32_t temp = 0x00000136; // 97 is 37 deg(?) 
+    uint32_t err_code;
+    err_code = sd_temp_get(&temp);
+    APP_ERROR_CHECK(err_code);
+    if (nrf_gpio_pin_read(BUTTON_1)) {
+        temp = 0x00000065; // 50 is 10 deg
+    }
+    temp = (temp / 4) * 100;
+    int8_t exponent = -2;
+    return ((exponent & 0xFF) << 24) | (temp & 0x00FFFFFF);
 }
 
 /* This function measures the battery voltage using the bandgap as a reference.
